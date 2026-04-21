@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PWA Test</title>
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#e94560" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="PWA Test" />
+  <link rel="apple-touch-icon" href="./icons/icon-192x192.png" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #1a1a2e;
+      --bg2: #16213e;
+      --accent: #e94560;
+      --white: #f0e6ff;
+      --mono: 'Space Mono', monospace;
+      --display: 'Syne', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: var(--mono);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 20% 50%, #e9456022 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 20%, #0f3460aa 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .title {
+      font-family: var(--display);
+      font-size: clamp(2rem, 8vw, 3.5rem);
+      font-weight: 800;
+      text-align: center;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .title span {
+      color: var(--accent);
+    }
+
+    .subtitle {
+      font-size: 0.75rem;
+      opacity: 0.5;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    .btn {
+      padding: 1rem 2rem;
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: white;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .btn:active::after { opacity: 0.15; }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-1 {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 0 30px #e9456055;
+    }
+
+    .btn-2 {
+      background: transparent;
+      color: var(--white);
+      border: 1.5px solid #ffffff33;
+    }
+
+    .btn-2:hover { border-color: var(--accent); color: var(--accent); }
+
+    .install-btn {
+      background: var(--bg2);
+      color: var(--white);
+      border: 1.5px solid var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .install-btn.hidden { display: none; }
+
+    .install-icon { font-size: 1.1rem; }
+
+    .status {
+      font-size: 0.7rem;
+      opacity: 0.4;
+      letter-spacing: 0.1em;
+      text-align: center;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--accent);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-family: var(--mono);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      white-space: nowrap;
+      z-index: 999;
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-right: 0.5rem;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body>
+
+  <div>
+    <p class="subtitle"><span class="dot"></span>PWA · 2025 RULES</p>
+    <h1 class="title">TEST<br/><span>APP</span></h1>
+  </div>
+
+  <div class="buttons">
+    <button class="btn btn-1" onclick="showToast('Button 1 fired 🔴')">
+      BUTTON ONE
+    </button>
+    <button class="btn btn-2" onclick="showToast('Button 2 fired ⬜')">
+      BUTTON TWO
+    </button>
+    <button class="btn install-btn hidden" id="installBtn" onclick="installApp()">
+      <span class="install-icon">📲</span> INSTALL APP
+    </button>
+  </div>
+
+  <p class="status" id="swStatus">checking service worker...</p>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let deferredPrompt = null;
+    const installBtn = document.getElementById('installBtn');
+    const swStatus = document.getElementById('swStatus');
+
+    // Service worker register
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => {
+          swStatus.textContent = '✓ service worker active';
+        })
+        .catch(err => {
+          swStatus.textContent = '✗ sw error: ' + err.message;
+        });
+    } else {
+      swStatus.textContent = 'service worker not supported';
+    }
+
+    // Capture install prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.classList.remove('hidden');
+    });
+
+    window.addEventListener('appinstalled', () => {
+      installBtn.classList.add('hidden');
+      deferredPrompt = null;
+      showToast('App installed! 🎉');
+    });
+
+    async function installApp() {
+      if (!deferredPrompt) {
+        showToast('Already installed or use browser menu');
+        return;
+      }
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') showToast('Installing... 🎉');
+      deferredPrompt = null;
+      installBtn.classList.add('hidden');
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+  </script>
+</body>
+</html>
